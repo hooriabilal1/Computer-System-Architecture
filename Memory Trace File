@@ -1,0 +1,62 @@
+! Filename: HooriaBilal_10906931_validation.txt
+! Author: Hooria Bilal
+! Student ID: 10906931
+! Date: March 27, 2025
+! Command line: .\cachesim HooriaBilal_10906931_validation.txt 16 256
+! Cache configuration: 16 words per block, 256 blocks
+! Note: This validation trace file was improved with assistance from Grok AI to ensure distinct outputs and full branch coverage.
+! It also aided in the structuring and suggestions of testing branches
+! Address breakdown: 32-bit address, block_offset_bits = log2(16) = 4, block_id_bits = log2(256) = 8, tag_bits = 20
+! =====================================================
+! TEST 1 — Branch 2: Read miss (valid = 0)
+! Index 0xC8 (200), tag 0x00000, first access → miss
+R C800 0000
+! Expected: Load block, valid = 1, tag = 0x00000, dirty = 0
+! CPUR=1, CPUW=0, NRA=16, NWA=0, NCRH=0, NCRM=1, NCWH=0, NCWM=0
+! =====================================================
+! TEST 2 — Branch 1: Read hit
+! Same block (index 0xC8, tag 0x00000), different offset
+R C80F 0001
+! Expected: Hit, no memory access
+! CPUR=2, CPUW=0, NRA=16, NWA=0, NCRH=1, NCRM=1, NCWH=0, NCWM=0
+! =====================================================
+! TEST 3 — Branch 5: Write hit
+! Same block (index 0xC8, tag 0x00000) → write hit, sets dirty
+W C808 0002
+! Expected: dirty = 1
+! CPUR=2, CPUW=1, NRA=16, NWA=0, NCRH=1, NCRM=1, NCWH=1, NCWM=0
+! =====================================================
+! TEST 4 — Branch 4: Read miss (valid = 1, tag mismatch, dirty = 1)
+! Index 0xC8, new tag 0x00001 → write-back of dirty block
+R 1C800 0003
+! Expected: Write-back (NWA += 16), load block, tag = 0x00001, dirty = 0
+! CPUR=3, CPUW=1, NRA=32, NWA=16, NCRH=1, NCRM=2, NCWH=1, NCWM=0
+! =====================================================
+! TEST 5 — Branch 7: Write miss (valid = 1, tag mismatch, dirty = 0)
+! Index 0xC8, new tag 0x00002 → write-allocate, no write-back
+W 2C800 0004
+! Expected: Load block (NRA += 16), tag = 0x00002, dirty = 1
+! CPUR=3, CPUW=2, NRA=48, NWA=16, NCRH=1, NCRM=2, NCWH=1, NCWM=1
+! =====================================================
+! TEST 6 — Branch 8: Write miss (valid = 1, tag mismatch, dirty = 1)
+! Overwrites dirty block (index 0xC8, tag 0x00003), triggers write-back
+W 3C800 0005
+! Expected: Write-back (NWA += 16), load block (NRA += 16), dirty = 1
+! CPUR=3, CPUW=3, NRA=64, NWA=32, NCRH=1, NCRM=2, NCWH=1, NCWM=2
+! =====================================================
+! TEST 7 — Branch 6: Write hit
+! Write to same block (index 0xC8, tag 0x00003) again
+W 3C80F 0006
+! Expected: Another write hit
+! CPUR=3, CPUW=4, NRA=64, NWA=32, NCRH=1, NCRM=2, NCWH=2, NCWM=2
+! =====================================================
+! TEST 8 — New Read miss (new index = 0xC9, tag = 0x00000)
+! Index not previously used, fresh miss
+R C900 0007
+! Expected: Load new block, separate from previous index
+! CPUR=4, CPUW=4, NRA=80, NWA=32, NCRH=1, NCRM=3, NCWH=2, NCWM=2
+! =====================================================
+! FINAL EXPECTED OUTPUT (for terminal):
+! Format: CPUR CPUW NRA NWA NCRH NCRM NCWH NCWM WIB BIC filename
+! 4 4 80 32 1 3 2 2 16 256 HooriaBilal_10906931_validation.txt
+
