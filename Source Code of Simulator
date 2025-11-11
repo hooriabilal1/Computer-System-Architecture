@@ -1,0 +1,144 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ 
+ /* Structure for a cache block */
+ typedef struct {
+     unsigned int tag;  // Tag bits to identify memory block
+     int valid;         // Valid bit to indicate if data is valid
+     int dirty;         // Dirty bit to track if block was written to
+ } CacheBlock;
+ 
+ /* Structure to track cache statistics */
+ typedef struct {
+    int CPUR,CPUW, NRA, NWA, NCRH, NCRM, NCWH,NCWM; 
+ } CacheStats;
+ 
+ /* Validates command-line arguments and extracts simulation parameters */
+ int ValidateCommandLineArgs(int argc, char *argv[], char **trace_filename, int *words_in_block, int *blocks_in_cache) {
+     if (argc != 4) return 0;
+ 
+     *trace_filename = argv[1];
+     *words_in_block = atoi(argv[2]);
+     *blocks_in_cache = atoi(argv[3]);
+ 
+     // Ensure parameters fall within valid ranges
+     if (*words_in_block < 2 || *words_in_block > 128 || *blocks_in_cache < 2 || *blocks_in_cache > 1024) {
+         return 0;
+     }
+     return 1;
+ }
+ 
+ /* Opens the trace file and allocates memory for the cache */
+ int InitializeCache(FILE **trace_file, CacheBlock **cache, char *trace_filename, int blocks_in_cache) {
+     *trace_file = fopen(trace_filename, "r");
+     if (*trace_file == NULL) return 0;
+ 
+     *cache = (CacheBlock *)calloc(blocks_in_cache, sizeof(CacheBlock));
+     if (*cache == NULL) {
+         fclose(*trace_file);
+         return 0;
+     }
+     return 1;
+ }
+ 
+ // Handles a read operation 
+ void ReadOperation(CacheBlock *cache, unsigned int block_id, unsigned int tag, int words_in_block, CacheStats *stats) {
+     stats->CPUR++;
+ 
+     // Cache hit: tag matches and block is valid
+     if (cache[block_id].valid && cache[block_id].tag == tag) {
+         stats->NCRH++;
+     } else {
+         // Cache miss: check if eviction is needed
+         stats->NCRM++;
+         if (cache[block_id].valid && cache[block_id].dirty) {
+             stats->NWA += words_in_block; // Write back dirty block
+         }
+         stats->NRA += words_in_block;     // Load block from memory
+         cache[block_id].valid = 1;
+         cache[block_id].tag = tag;
+         cache[block_id].dirty = 0;
+     }
+ }
+ 
+ // Handles a write operation 
+ void WriteOperation(CacheBlock *cache, unsigned int block_id, unsigned int tag, int words_in_block, CacheStats *stats) {
+     stats->CPUW++;
+ 
+     // Cache write hit
+     if (cache[block_id].valid && cache[block_id].tag == tag) {
+         stats->NCWH++;
+         cache[block_id].dirty = 1;
+     } else {
+         // Cache write miss: write-allocate policy
+         stats->NCWM++;
+         stats->NRA += words_in_block;
+         if (cache[block_id].valid && cache[block_id].dirty) {
+             stats->NWA += words_in_block; // Write back dirty block
+         }
+         cache[block_id].valid = 1;
+         cache[block_id].tag = tag;
+         cache[block_id].dirty = 1;
+     }
+ }
+ 
+// Parses and processes each line of the memory trace file 
+ void SimulateCache(FILE *trace_file, CacheBlock *cache, int words_in_block, int blocks_in_cache, CacheStats *stats) {
+     char line[64];
+     char operation;
+     unsigned int address, data;
+ 
+     while (fgets(line, sizeof(line), trace_file) != NULL) {
+         if (line[0] == '!' || line[0] == '\n') continue; // Skip comments and blank lines
+ 
+         // Read operation, address, and data from trace line
+         if (sscanf(line, "%c %x %x", &operation, &address, &data) != 3) continue;
+ 
+         // Calculate cache block index and tag using division
+         unsigned int block_id = (address / words_in_block) % blocks_in_cache;
+         unsigned int tag = address / (words_in_block * blocks_in_cache);
+ 
+         // Perform operation
+         if (operation == 'R') {
+             ReadOperation(cache, block_id, tag, words_in_block, stats);
+         } else if (operation == 'W') {
+             WriteOperation(cache, block_id, tag, words_in_block, stats);
+         }
+     }
+ }
+ 
+// Prints the final simulation statistics in required format 
+ void PrintSimulationResults(CacheStats stats, int words_in_block, int blocks_in_cache, char *trace_filename) {
+     printf("%d %d %d %d %d %d %d %d %d %d %s\n",
+            stats.CPUR, stats.CPUW, stats.NRA, stats.NWA,
+            stats.NCRH, stats.NCRM, stats.NCWH, stats.NCWM,
+            words_in_block, blocks_in_cache, trace_filename);
+ }
+ 
+ // Main function: entry point of the program 
+ int main(int argc, char *argv[]) {
+     char *trace_filename;
+     int words_in_block, blocks_in_cache;
+     FILE *trace_file;
+     CacheBlock *cache;
+     CacheStats stats = {0}; // Initialize all stats to zero
+ 
+     // Parse and validate command-line input
+     if (!ValidateCommandLineArgs(argc, argv, &trace_filename, &words_in_block, &blocks_in_cache)) return 1;
+ 
+     // Set up cache memory and open trace file
+     if (!InitializeCache(&trace_file, &cache, trace_filename, blocks_in_cache)) return 1;
+ 
+     // Process each line of the trace file
+     SimulateCache(trace_file, cache, words_in_block, blocks_in_cache, &stats);
+ 
+     // Release resources
+     fclose(trace_file);
+     free(cache);
+ 
+     // Display results
+     PrintSimulationResults(stats, words_in_block, blocks_in_cache, trace_filename);
+ 
+     return 0;
+ }
