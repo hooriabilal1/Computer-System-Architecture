@@ -16,12 +16,6 @@ Calculates memory accesses, cache hits/misses, and memory read/write statistics 
 - Tools: GCC / Visual Studio Code
 - Platform: Windows 
 
-## Project Structure
-- `/src` → Source code
-- `/traces` → Memory trace files
-- `/docs` → Diagrams and explanations
-- `/results` → Output logs and CSV statistics
-
 ## How to Run
 ```bash
 gcc src/*.c -o cache_sim
