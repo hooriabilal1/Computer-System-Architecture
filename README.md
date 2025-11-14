@@ -2,8 +2,7 @@
 # Direct-Mapped Cache Simulator (C)
 
 ## Overview
-A simulation of a direct-mapped CPU cache controller, written in C.  
-Calculates memory accesses, cache hits/misses, and memory read/write statistics from trace files.
+As part of Computer System Architecture Module, with heavy focus on ARMv8 architecture to understand key concepts such as memory hierarchy, cache design, and CPU performance. Applying these principles i developed a direct-mapped cache controller simulator in C. Calculating memory accesses, cache hits/misses, and memory read/write statistics from trace files.
 
 ## Features
 - Configurable cache size and block size
