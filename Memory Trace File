@@ -1,11 +1,4 @@
-! Filename: HooriaBilal_10906931_validation.txt
-! Author: Hooria Bilal
-! Student ID: 10906931
-! Date: March 27, 2025
-! Command line: .\cachesim HooriaBilal_10906931_validation.txt 16 256
-! Cache configuration: 16 words per block, 256 blocks
-! Note: This validation trace file was improved with assistance from Grok AI to ensure distinct outputs and full branch coverage.
-! It also aided in the structuring and suggestions of testing branches
+
 ! Address breakdown: 32-bit address, block_offset_bits = log2(16) = 4, block_id_bits = log2(256) = 8, tag_bits = 20
 ! =====================================================
 ! TEST 1 — Branch 2: Read miss (valid = 0)
