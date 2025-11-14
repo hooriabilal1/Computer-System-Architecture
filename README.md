@@ -14,7 +14,7 @@ Calculates memory accesses, cache hits/misses, and memory read/write statistics 
 ## Tech Stack
 - Language: C
 - Tools: GCC / Visual Studio Code
-- Platform: Windows / Linux
+- Platform: Windows 
 
 ## Project Structure
 - `/src` → Source code
